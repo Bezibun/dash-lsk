@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Asesor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #10b981; --primary-dark: #064e3b; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #fdfdfd; color: #1e293b; letter-spacing: -0.01em; }
+        .glass-nav { background: rgba(255, 255, 255, 0.8); backdrop-filter: saturate(180%) blur(15px); border-bottom: 1px solid rgba(226, 232, 240, 0.7); }
+        .login-gradient { background: radial-gradient(at 0% 0%, #064e3b 0%, #022c22 100%); }
+        .card-modern { background: white; border: 1px solid #f1f5f9; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+        .card-modern:hover { border-color: #10b981; box-shadow: 0 20px 25px -5px rgba(16, 185, 129, 0.05); transform: translateY(-2px); }
+        .card-active { border-color: #10b981; background: #f0fdf4; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.1); }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        .modal-blur { backdrop-filter: blur(10px); background: rgba(15, 23, 42, 0.6); }
+        @keyframes scaleUp { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .animate-modal { animation: scaleUp 0.3s ease-out forwards; }
+    </style>
+</head>
+<body class="antialiased overflow-x-hidden">
+
+    <div id="app">
+        <!-- Header Navigasi -->
+        <nav id="top-nav" class="fixed top-0 w-full z-[40] glass-nav px-8 py-5 flex justify-between items-center hidden">
+            <div class="flex items-center gap-4">
+                <div class="w-11 h-11 bg-slate-900 rounded-2xl flex items-center justify-center shadow-lg shadow-slate-200">
+                    <i data-lucide="shield-check" class="text-emerald-400 w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-xl tracking-tighter leading-none">LSK<span class="text-emerald-600"> Global Jaya Lingkungan</span></h1>
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Portal Resmi Asesor</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-6">
+                <div class="hidden md:flex items-center gap-3 pr-6 border-r border-slate-200">
+                    <div class="text-right">
+                        <p id="user-email-display" class="text-xs font-extrabold text-slate-900"></p>
+                        <p class="text-[9px] font-bold text-emerald-500 uppercase tracking-tighter">Verified Session</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-black text-slate-500 text-xs border border-white" id="user-avatar">?</div>
+                </div>
+                <button onclick="logout()" class="flex items-center gap-2 text-slate-400 hover:text-red-500 transition-colors font-bold text-xs uppercase tracking-widest">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline">Logout</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Konten Utama -->
+        <main id="main-content" class="pt-32 pb-20 px-8 max-w-[1400px] mx-auto hidden">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 mb-12">
+                <div>
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="px-2 py-0.5 bg-emerald-100 text-emerald-600 text-[9px] font-black uppercase rounded">Live</span>
+                        <p class="text-slate-400 text-[11px] font-bold uppercase tracking-[0.2em]">Monitoring System</p>
+                    </div>
+                    <h2 class="text-4xl font-black text-slate-900 tracking-tight">Antrean Verifikasi</h2>
+                </div>
+
+                <!-- Search & Actions -->
+                <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+
+                    <div class="relative">
+    <button onclick="toggleDropdown()" 
+    class="px-6 py-4 bg-slate-900 text-white text-xs font-extrabold rounded-2xl hover:bg-emerald-600 transition-all flex items-center gap-2">
+        Rekap Data
+        <i data-lucide="chevron-down" class="w-4 h-4"></i>
+    </button>
+
+    <div id="dropdown-rekap" class="hidden absolute right-0 mt-3 w-64 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden z-50">
+
+        <button onclick="handleRekap('all')" class="w-full flex items-center gap-3 px-5 py-3 text-xs font-bold hover:bg-slate-50">
+            <i data-lucide="database" class="w-4 h-4 text-slate-400"></i>
+            Semua Data
+        </button>
+
+        <button onclick="handleRekap('verified')" class="w-full flex items-center gap-3 px-5 py-3 text-xs font-bold hover:bg-slate-50">
+            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500"></i>
+            Data Verified
+        </button>
+
+        <button onclick="handleRekap('pending')" class="w-full flex items-center gap-3 px-5 py-3 text-xs font-bold hover:bg-slate-50">
+            <i data-lucide="clock" class="w-4 h-4 text-amber-500"></i>
+            Data Pending
+        </button>
+
+        <button onclick="handleRekap('belum_bayar')" class="w-full flex items-center gap-3 px-5 py-3 text-xs font-bold hover:bg-slate-50">
+            <i data-lucide="credit-card" class="w-4 h-4 text-red-500"></i>
+            Belum Bayar
+        </button>
+
+    </div>
+</div>
+
+                    <div class="relative flex-1 lg:w-80">
+                        <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                        <input type="text" id="search-input" oninput="handleSearch()" placeholder="Cari Nama, Email, Skema..." class="w-full pl-12 pr-6 py-4 bg-white border border-slate-200 rounded-2xl text-xs font-bold outline-none focus:border-emerald-500 transition-all shadow-sm">
+                    </div>
+                    <button onclick="refreshData()" class="flex items-center justify-center gap-3 px-6 py-4 bg-white border border-slate-200 text-xs font-extrabold uppercase tracking-widest rounded-2xl hover:border-emerald-500 hover:text-emerald-600 transition-all shadow-sm group">
+                        <i data-lucide="refresh-cw" class="w-4 h-4 group-active:rotate-180 transition-all"></i> Refresh Data
+                    </button>
+                </div>
+            </div>
+
+            <!-- Statistik (Kini Interaktif) -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                <div id="card-all" onclick="setQuickFilter('all')" class="card-modern card-active p-8 rounded-[2rem] flex items-center gap-6">
+                    <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center"><i data-lucide="users" class="w-8 h-8"></i></div>
+                    <div>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Registrations</p>
+                        <h4 id="stat-total" class="text-3xl font-black text-slate-900 mt-1">0</h4>
+                    </div>
+                </div>
+                <div id="card-belum-bayar" onclick="setQuickFilter('belum_bayar')" class="card-modern p-8 rounded-[2rem] flex items-center gap-6">
+                    <div class="w-16 h-16 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center">
+                        <i data-lucide="x-circle" class="w-8 h-8"></i>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Belum Bayar</p>
+                        <h4 id="stat-belum-bayar" class="text-3xl font-black text-slate-900 mt-1">0</h4>
+                    </div>
+                </div>
+                <div id="card-pending" onclick="setQuickFilter('pending')" class="card-modern p-8 rounded-[2rem] flex items-center gap-6">
+                    <div class="w-16 h-16 bg-amber-50 text-amber-600 rounded-3xl flex items-center justify-center"><i data-lucide="clock" class="w-8 h-8"></i></div>
+                    <div>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pending</p>
+                        <h4 id="stat-pending" class="text-3xl font-black text-slate-900 mt-1">0</h4>
+                    </div>
+                </div>
+                <div id="card-verified" onclick="setQuickFilter('verified')" class="card-modern p-8 rounded-[2rem] flex items-center gap-6">
+                    <div class="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-3xl flex items-center justify-center"><i data-lucide="check-circle-2" class="w-8 h-8"></i></div>
+                    <div>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Verified</p>
+                        <h4 id="stat-verified" class="text-3xl font-black text-slate-900 mt-1">0</h4>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabel Kandidat -->
+            <div class="bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl shadow-slate-200/40 overflow-hidden">
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="bg-slate-50/50">
+                                <th class="pl-10 pr-6 py-6 text-[11px] font-black text-slate-400 uppercase tracking-widest">Kandidat Asesi</th>
+                                <th class="px-6 py-6 text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">Skema</th>
+                                <th class="px-6 py-6 text-[11px] font-black text-slate-400 uppercase tracking-widest">Domisili</th>
+                                <th class="px-6 py-6 text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">Pembayaran</th>
+                                <th class="px-6 py-6 text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
+                                <th class="pr-10 pl-6 py-6 text-[11px] font-black text-slate-400 uppercase tracking-widest text-right">Tindakan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-list" class="divide-y divide-slate-50"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+
+        <!-- Sidebar Detail -->
+        <div id="side-overlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity duration-300" onclick="hideDetail()"></div>
+        <aside id="side-panel" class="fixed top-0 right-0 h-full w-full max-w-xl bg-white z-[60] shadow-2xl translate-x-full transition-transform duration-500 ease-out overflow-y-auto custom-scrollbar">
+            <div id="side-content"></div>
+        </aside>
+
+        <!-- Login Portal -->
+        <section id="login-overlay" class="fixed inset-0 z-[100] login-gradient flex items-center justify-center p-6 hidden">
+            <div class="bg-white w-full max-w-md rounded-[3.5rem] p-12 md:p-16 shadow-2xl relative">
+                <div class="relative z-10">
+                    <div class="w-20 h-20 bg-slate-900 rounded-3xl flex items-center justify-center mb-10 shadow-2xl shadow-emerald-900/40 rotate-3">
+                        <i data-lucide="fingerprint" class="text-emerald-500 w-10 h-10"></i>
+                    </div>
+                    <h3 class="text-4xl font-black text-slate-900 mb-3 tracking-tight leading-none">Access<br><span class="text-emerald-600 italic">Control</span></h3>
+                    <p class="text-slate-400 text-sm mb-12 font-medium">Otorisasi khusus akun asesor LSK Amdal.</p>
+                    <div class="space-y-6">
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">E-Mail Address</label>
+                            <input type="email" id="auth-email" class="w-full px-7 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all font-bold text-sm">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Private Password</label>
+                            <input type="password" id="auth-pass" class="w-full px-7 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all font-bold text-sm">
+                        </div>
+                        <button onclick="login()" id="btn-login" class="w-full py-5 bg-slate-900 text-emerald-400 font-black rounded-2xl shadow-2xl mt-8 hover:bg-emerald-600 hover:text-white transition-all transform active:scale-95">OTORISASI AKSES</button>
+                        <div id="auth-error" class="hidden p-4 bg-red-50 text-red-600 text-[11px] font-bold rounded-2xl border border-red-100 text-center animate-pulse"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Document Viewer Modal -->
+        <div id="doc-modal" class="fixed inset-0 z-[100] modal-blur hidden flex items-center justify-center p-4 md:p-10">
+            <div class="bg-white w-full max-w-6xl h-full max-h-[90vh] rounded-[3rem] shadow-2xl flex flex-col overflow-hidden animate-modal">
+                <div class="px-10 py-6 border-b border-slate-100 flex justify-between items-center bg-white/50">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600">
+                            <i data-lucide="file-eye" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h4 id="modal-doc-title" class="font-black text-slate-900 tracking-tight">Meninjau Berkas</h4>
+                            <p class="text-[9px] font-black text-emerald-500 uppercase tracking-widest">LSK AMDAL Verified Docs</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <a id="btn-pop-external" href="#" target="_blank" class="p-3 bg-slate-50 text-slate-400 hover:bg-emerald-50 hover:text-emerald-600 rounded-2xl transition-all" title="Buka Tab Baru">
+                            <i data-lucide="external-link" class="w-5 h-5"></i>
+                        </a>
+                        <button onclick="closeDocModal()" class="p-3 bg-red-50 text-red-400 hover:bg-red-500 hover:text-white rounded-2xl transition-all">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex-1 bg-slate-100 relative">
+                    <div id="doc-loader" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 z-10">
+                        <div class="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                        <p class="mt-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Generating Secure Token...</p>
+                    </div>
+                    <iframe id="doc-frame" src="" class="w-full h-full border-none opacity-0 transition-opacity duration-500"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SB_URL = 'https://lethwgfaqxrdhwcqctze.supabase.co';
+        const SB_KEY = 'sb_publishable_hbYoS1xiqoQwJ2F1e7lTgg_uO7hxx-y';
+        const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
+        const BUCKET_NAME = 'berkas_lsk';
+
+        let pendaftaranData = [];
+        let filteredData = [];
+        let currentStatusFilter = 'all'; // Default filter state
+
+        async function checkSession() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) {
+                document.getElementById('login-overlay').classList.add('hidden');
+                document.getElementById('main-content').classList.remove('hidden');
+                document.getElementById('top-nav').classList.remove('hidden');
+                document.getElementById('user-email-display').innerText = session.user.email;
+                document.getElementById('user-avatar').innerText = session.user.email.charAt(0).toUpperCase();
+                refreshData();
+            } else {
+                document.getElementById('login-overlay').classList.remove('hidden');
+            }
+            lucide.createIcons();
+        }
+
+        async function login() {
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('auth-pass').value;
+            const btn = document.getElementById('btn-login');
+            btn.innerText = "VERIFYING...";
+            btn.disabled = true;
+
+            const { error } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
+            if (error) {
+                const errBox = document.getElementById('auth-error');
+                errBox.classList.remove('hidden');
+                errBox.innerText = "Akses Ditolak: " + error.message;
+                btn.innerText = "OTORISASI AKSES";
+                btn.disabled = false;
+            } else {
+                window.location.reload();
+            }
+        }
+
+        async function logout() {
+            await supabaseClient.auth.signOut();
+            window.location.reload();
+        }
+
+        async function refreshData() {
+            const { data } = await supabaseClient.from('pendaftaran').select('*').order('created_at', { ascending: false });
+            pendaftaranData = data || [];
+            updateStats();
+            handleSearch(); // Triggers render through search and current filters
+        }
+
+        function updateStats() {
+            document.getElementById('stat-total').innerText = pendaftaranData.length;
+            document.getElementById('stat-verified').innerText = pendaftaranData.filter(x => x.status_verifikasi === 'Verified').length;
+            document.getElementById('stat-pending').innerText = pendaftaranData.filter(x => x.status_verifikasi !== 'Verified').length;
+            document.getElementById('stat-belum-bayar').innerText = pendaftaranData.filter(x => x.status_pembayaran !== 'Sudah Bayar').length;
+        }
+
+        // Fungsi Baru untuk Filter Berdasarkan Klik Statistik
+        function setQuickFilter(type) {
+            currentStatusFilter = type;
+            
+            // UI Feedback: Highlight card yang aktif
+            document.getElementById('card-all').classList.remove('card-active');
+            document.getElementById('card-pending').classList.remove('card-active');
+            document.getElementById('card-verified').classList.remove('card-active');
+            document.getElementById('card-belum-bayar').classList.remove('card-active');
+
+            if (type === 'all') document.getElementById('card-all').classList.add('card-active');
+            if (type === 'pending') document.getElementById('card-pending').classList.add('card-active');
+            if (type === 'verified') document.getElementById('card-verified').classList.add('card-active');
+            if (type === 'belum_bayar') document.getElementById('card-belum-bayar').classList.add('card-active');
+
+            handleSearch(); // Re-apply filter and render
+        }
+
+        function handleSearch() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            
+            filteredData = pendaftaranData.filter(item => {
+                // 1. Cek Pencarian Teks
+                const matchesSearch = (item.nama && item.nama.toLowerCase().includes(query)) ||
+                    (item.email && item.email.toLowerCase().includes(query)) ||
+                    (item.skema && item.skema.toLowerCase().includes(query)) ||
+                    (item.kota && item.kota.toLowerCase().includes(query));
+
+                // 2. Cek Filter Status dari Klik Statistik
+                let matchesStatus = true;
+                if (currentStatusFilter === 'verified') {
+                    matchesStatus = item.status_verifikasi === 'Verified';
+                } else if (currentStatusFilter === 'pending') {
+                    matchesStatus = item.status_verifikasi !== 'Verified';
+                }
+                if (currentStatusFilter === 'belum_bayar') {
+                    matchesStatus = item.status_pembayaran !== 'Sudah Bayar';
+}
+                return matchesSearch && matchesStatus;
+            });
+            
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('table-list');
+            if (filteredData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-20 text-center text-slate-400 font-bold text-sm">Data tidak ditemukan...</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = filteredData.map(item => {
+                const isVerified = item.status_verifikasi === 'Verified';
+                return `
+                <tr class="group hover:bg-slate-50 transition-all">
+                    <td class="pl-10 pr-6 py-8">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center font-black text-emerald-400 text-xs shadow-lg shadow-slate-100">${(item.nama || '?').charAt(0)}</div>
+                            <div>
+                                <p class="font-extrabold text-sm text-slate-900">${item.nama || 'Tanpa Nama'}</p>
+                                <p class="text-[10px] font-medium text-slate-400 mt-0.5">${item.email || '-'}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-8 text-center">
+                        <span class="px-3 py-1.5 bg-slate-900 text-emerald-400 text-[9px] font-black rounded-lg uppercase tracking-wider">${item.skema || 'KTPA'}</span>
+                    </td>
+                    <td class="px-6 py-8">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-300"></i>
+                            <span class="text-xs text-slate-500 font-bold">${item.kota || 'Indonesia'}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-8 text-center">
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tight ${
+                            item.status_pembayaran === 'Sudah Bayar'
+                            ? 'bg-emerald-50 text-emerald-600'
+                            : 'bg-red-50 text-red-600'
+                        }">
+                            <span class="w-1 h-1 rounded-full ${
+                                item.status_pembayaran === 'Sudah Bayar'
+                                ? 'bg-emerald-600'
+                                : 'bg-red-600'
+                            }"></span>
+                            ${item.status_pembayaran || 'Belum Bayar'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-8 text-center">
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tight ${isVerified ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}">
+                            <span class="w-1 h-1 rounded-full ${isVerified ? 'bg-emerald-600' : 'bg-amber-600'}"></span>
+                            ${item.status_verifikasi || 'Pending'}
+                        </span>
+                    </td>
+                    <td class="pr-10 pl-6 py-8 text-right">
+                        <button onclick="showDetail('${item.id}')" class="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all shadow-sm">Review</button>
+                    </td>
+                </tr>`;
+            }).join('');
+            lucide.createIcons();
+        }
+        
+        async function updatePembayaran(id, statusBaru) {
+            try {
+                const { error } = await supabaseClient
+                    .from('pendaftaran')
+                    .update({ status_pembayaran: statusBaru })
+                    .eq('id', id);
+
+                if (error) throw error;
+
+                alert("Status pembayaran berhasil diupdate!");
+                hideDetail();
+                refreshData();
+            } catch (err) {
+                alert("Gagal update: " + err.message);
+            }
+        }
+
+        async function showDetail(id) {
+            const item = pendaftaranData.find(x => x.id === id);
+            const panel = document.getElementById('side-panel');
+            const overlay = document.getElementById('side-overlay');
+            const content = document.getElementById('side-content');
+            
+            overlay.classList.remove('hidden');
+            setTimeout(() => overlay.classList.add('opacity-100'), 10);
+            panel.classList.remove('translate-x-full');
+
+            content.innerHTML = `<div class="p-20 text-center text-slate-400 text-xs font-bold animate-pulse">Generating Secure Access Tokens...</div>`;
+
+            const berkasDef = [
+                { label: 'Kartu Identitas (KTP)', key: 'url_ktp', icon: 'credit-card' },
+                { label: 'Ijazah Terakhir', key: 'url_ijazah', icon: 'graduation-cap' },
+                { label: 'Curriculum Vitae', key: 'url_cv', icon: 'file-text' },
+                { label: 'Sertifikat Kompetensi', key: 'url_sertifikat', icon: 'award' },
+                { label: 'Pas Foto Terbaru', key: 'url_foto', icon: 'image' }
+            ];
+
+            let berkasHtml = '';
+            for (const b of berkasDef) {
+                let rawPath = item[b.key];
+                if (rawPath && rawPath.length > 5) {
+                    let cleanPath = '';
+                    try {
+                        if (rawPath.includes(BUCKET_NAME + '/')) {
+                            cleanPath = rawPath.split(BUCKET_NAME + '/')[1].split('?')[0];
+                        } else if (rawPath.startsWith('http')) {
+                            const parts = rawPath.split('/');
+                            const bucketIdx = parts.indexOf(BUCKET_NAME);
+                            if (bucketIdx !== -1) {
+                                cleanPath = parts.slice(bucketIdx + 1).join('/').split('?')[0];
+                            } else {
+                                cleanPath = parts.pop().split('?')[0];
+                            }
+                        } else {
+                            cleanPath = rawPath.split('?')[0];
+                        }
+                        cleanPath = decodeURIComponent(cleanPath);
+                        const { data, error } = await supabaseClient.storage.from(BUCKET_NAME).createSignedUrl(cleanPath, 3600);
+                        const url = data?.signedUrl || '#';
+
+                        if (!error && url !== '#') {
+                            berkasHtml += `
+                                <div class="group p-5 bg-slate-50 border border-slate-100 rounded-[1.5rem] flex justify-between items-center transition-all hover:bg-white hover:border-emerald-200">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-slate-400 group-hover:text-emerald-500 shadow-sm transition-colors">
+                                            <i data-lucide="${b.icon}" class="w-5 h-5"></i>
+                                        </div>
+                                        <div>
+                                            <span class="text-xs font-black text-slate-900">${b.label}</span>
+                                            <p class="text-[9px] font-bold text-emerald-500 uppercase tracking-tighter">Secure Link Generated</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+
+                                    <!-- LIHAT -->
+                                    <button onclick="openDocModal('${url}', '${b.label}')" 
+                                        class="p-3 bg-white border border-slate-200 text-slate-900 rounded-xl hover:bg-emerald-600 hover:text-white transition-all">
+                                        <i data-lucide="eye" class="w-4 h-4"></i>
+                                    </button>
+
+                                    <!-- HAPUS -->
+                                    <button onclick="deleteFile('${cleanPath}', '${item.id}', '${b.key}')" 
+                                        class="p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+
+                                </div>
+
+                                <!-- UPLOAD -->
+                                <label class="cursor-pointer p-3 bg-blue-50 text-blue-500 rounded-xl hover:bg-blue-500 hover:text-white transition-all">
+                                    <i data-lucide="upload" class="w-4 h-4"></i>
+                                    <input type="file" 
+                                        onchange="uploadFile(event, '${item.id}', '${b.key}')"
+                                        class="hidden">
+                                </label>
+                                </div>`;
+                        }
+                    } catch (e) { console.error("Error generating URL for", b.key, e); }
+                }
+            }
+
+            const isVerified = item.status_verifikasi === 'Verified';
+
+            content.innerHTML = `
+                <div class="sticky top-0 bg-white/90 backdrop-blur-md z-10 px-10 py-8 border-b border-slate-50 flex justify-between items-center">
+                    <h4 class="font-black text-[10px] uppercase tracking-[0.3em] text-slate-400">Berkas Pendaftaran</h4>
+                    <button onclick="hideDetail()" class="p-2 text-slate-300 hover:text-red-500"><i data-lucide="x" class="w-6 h-6"></i></button>
+                </div>
+                <div class="p-10">
+                    <div class="bg-slate-900 p-10 rounded-[3rem] text-white mb-10 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-40 h-40 bg-emerald-500/10 rounded-full -mr-20 -mt-20 blur-2xl"></div>
+                        <span class="px-3 py-1 bg-emerald-500/20 text-emerald-400 text-[9px] font-black uppercase tracking-widest rounded-lg border border-emerald-500/30">${item.skema || 'KTPA'}</span>
+                        <h5 class="text-3xl font-black tracking-tight mt-4 leading-none">${item.nama || 'Anonim'}</h5>
+                        <p class="text-sm text-slate-400 mt-4 font-medium flex items-center gap-2">
+                             <i data-lucide="mail" class="w-4 h-4 text-emerald-500"></i> ${item.email || '-'}
+                        </p>
+                    </div>
+                    <div id="action-feedback" class="hidden mb-10 p-6 rounded-3xl text-xs font-bold"></div>
+                    <div class="space-y-4 mb-12">
+                         <div class="flex items-center gap-2 mb-6">
+                            <div class="w-1 h-4 bg-emerald-500 rounded-full"></div>
+                            <p class="text-[10px] font-black text-slate-900 uppercase tracking-widest">Lampiran Digital</p>
+                        </div>
+                        <div class="grid grid-cols-1 gap-4">
+                            ${berkasHtml || '<div class="text-center py-10 bg-slate-50 rounded-3xl italic text-slate-400 text-xs">Berkas tidak dapat dimuat atau pendaftar tidak mengunggah berkas.</div>'}
+                        </div>
+                    </div>
+                    <div class="pt-10 border-t border-slate-100">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Keputusan Verifikasi</p>
+                        ${isVerified ? `
+                            <button id="btn-toggle-verify" onclick="updateStatus('${item.id}', 'Pending')" class="relative w-full py-6 bg-amber-600 text-white text-[11px] font-black uppercase tracking-widest rounded-[1.5rem] hover:bg-slate-900 transition-all shadow-xl shadow-amber-200/50 group overflow-hidden">
+                                <span id="btn-text" class="relative z-10">Batalkan Verifikasi</span>
+                                <div id="btn-loader" class="hidden absolute inset-0 items-center justify-center bg-slate-900 rounded-[1.5rem]">
+                                    <i data-lucide="refresh-cw" class="w-5 h-5 animate-spin text-emerald-400"></i>
+                                </div>
+                                <div class="pt-6">
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">
+                                    Status Pembayaran
+                                </p>
+
+                                <div class="flex gap-3">
+                                    <button onclick="updatePembayaran('${item.id}', 'Sudah Bayar')" 
+                                        class="flex-1 py-4 bg-emerald-600 text-white text-[10px] font-black rounded-2xl hover:bg-emerald-700 transition-all">
+                                        Tandai Sudah Bayar
+                                    </button>
+
+                                    <button onclick="updatePembayaran('${item.id}', 'Belum Bayar')" 
+                                        class="flex-1 py-4 bg-red-500 text-white text-[10px] font-black rounded-2xl hover:bg-red-600 transition-all">
+                                        Tandai Belum Bayar
+                                    </button>
+                                </div>
+                            </div>
+                            </button>
+                        ` : `
+                            <button id="btn-toggle-verify" onclick="updateStatus('${item.id}', 'Verified')" class="relative w-full py-6 bg-emerald-600 text-white text-[11px] font-black uppercase tracking-widest rounded-[1.5rem] hover:bg-slate-900 transition-all shadow-xl shadow-emerald-200/50 group overflow-hidden">
+                                <span id="btn-text" class="relative z-10">Selesaikan Verifikasi</span>
+                                <div id="btn-loader" class="hidden absolute inset-0 items-center justify-center bg-slate-900 rounded-[1.5rem]">
+                                    <i data-lucide="refresh-cw" class="w-5 h-5 animate-spin text-emerald-400"></i>
+                                </div>
+                            </button>
+                        `}
+                    </div>
+                </div>`;
+            lucide.createIcons();
+        }
+
+        function openDocModal(url, title) {
+            const modal = document.getElementById('doc-modal');
+            const frame = document.getElementById('doc-frame');
+            const loader = document.getElementById('doc-loader');
+            const titleEl = document.getElementById('modal-doc-title');
+            const externalLink = document.getElementById('btn-pop-external');
+            titleEl.innerText = title;
+            externalLink.href = url;
+            modal.classList.remove('hidden');
+            loader.classList.remove('hidden');
+            frame.classList.add('opacity-0');
+            frame.src = url;
+            frame.onload = () => {
+                loader.classList.add('hidden');
+                frame.classList.remove('opacity-0');
+            };
+            lucide.createIcons();
+        }
+
+        function closeDocModal() {
+            const modal = document.getElementById('doc-modal');
+            const frame = document.getElementById('doc-frame');
+            modal.classList.add('hidden');
+            frame.src = '';
+        }
+
+        async function updateStatus(id, newStatus) {
+            const btn = document.getElementById('btn-toggle-verify');
+            const btnText = document.getElementById('btn-text');
+            const loader = document.getElementById('btn-loader');
+            const feedback = document.getElementById('action-feedback');
+            
+            btn.disabled = true;
+            btnText.classList.add('opacity-0');
+            loader.classList.remove('hidden');
+            loader.classList.add('flex');
+
+            try {
+                const { error } = await supabaseClient.from('pendaftaran').update({ status_verifikasi: newStatus }).eq('id', id);
+                if (error) throw error;
+                
+                feedback.className = `mb-10 p-6 rounded-[2rem] text-xs font-bold flex items-center gap-3 ${newStatus === 'Verified' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`;
+                feedback.innerHTML = `<i data-lucide="check-circle" class="w-5 h-5"></i> Status berhasil diperbarui menjadi: ${newStatus}`;
+                feedback.classList.remove('hidden');
+                lucide.createIcons();
+                
+                setTimeout(() => { hideDetail(); refreshData(); }, 1200);
+            } catch (err) {
+                feedback.className = "mb-10 p-6 rounded-[2rem] text-xs font-bold bg-red-50 text-red-600 border border-red-100";
+                feedback.innerHTML = `Gagal memperbarui status: ${err.message}`;
+                feedback.classList.remove('hidden');
+                btn.disabled = false;
+                btnText.classList.remove('opacity-0');
+                loader.classList.add('hidden');
+            }
+        }
+
+        function hideDetail() {
+            document.getElementById('side-overlay').classList.remove('opacity-100');
+            document.getElementById('side-panel').classList.add('translate-x-full');
+            setTimeout(() => document.getElementById('side-overlay').classList.add('hidden'), 300);
+        }
+
+        window.onload = checkSession;
+
+        function toggleDropdown() {
+            const dd = document.getElementById('dropdown-rekap');
+            dd.classList.toggle('hidden');
+            lucide.createIcons();
+        }
+
+        function handleRekap(type) {
+            document.getElementById('dropdown-rekap').classList.add('hidden');
+            generatePDF(type);
+        }
+
+        async function generatePDF(type) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            let dataFilter = [];
+
+            if (type === 'all') {
+                dataFilter = pendaftaranData;
+            } else if (type === 'pending') {
+                dataFilter = pendaftaranData.filter(x => x.status_verifikasi !== 'Verified');
+            } else if (type === 'verified') {
+                dataFilter = pendaftaranData.filter(x => x.status_verifikasi === 'Verified');
+            } else if (type === 'belum_bayar') {
+                dataFilter = pendaftaranData.filter(x => x.status_pembayaran !== 'Sudah Bayar');
+}
+
+            // Judul
+            doc.setFontSize(16);
+            doc.text(`Rekap Data ${type.toUpperCase()}`, 14, 15);
+
+            // Mapping data ke tabel
+            const tableData = dataFilter.map((item, index) => [
+                index + 1,
+                item.nama || '-',
+                item.email || '-',
+                item.skema || '-',
+                item.kota || '-',
+                item.status_verifikasi || 'Pending'
+            ]);
+
+            // Table
+            doc.autoTable({
+                startY: 25,
+                head: [['No', 'Nama', 'Email', 'Skema', 'Domisili', 'Status']],
+                body: tableData,
+                styles: {
+                    fontSize: 8
+                },
+                headStyles: {
+                    fillColor: [16, 185, 129] // emerald
+                }
+            });
+
+            // Save
+            doc.save(`Rekap_${type}.pdf`);
+        }
+
+window.addEventListener('click', function(e) {
+    const dropdown = document.getElementById('dropdown-rekap');
+    const button = e.target.closest('button');
+
+    if (!e.target.closest('#dropdown-rekap') && !button) {
+        dropdown.classList.add('hidden');
+    }
+});
+
+
+async function deleteFile(path, id, field) {
+    if (!confirm("Yakin hapus berkas ini?")) return;
+
+    try {
+        const { error: errDel } = await supabaseClient.storage
+            .from(BUCKET_NAME)
+            .remove([path]);
+
+        if (errDel) throw errDel;
+
+        const { error: errDb } = await supabaseClient
+            .from('pendaftaran')
+            .update({ [field]: null })
+            .eq('id', id);
+
+        if (errDb) throw errDb;
+
+        alert("Berkas berhasil dihapus!");
+        showDetail(id);
+    } catch (err) {
+        alert("Gagal hapus: " + err.message);
+    }
+}
+
+async function uploadFile(event, id, field) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    try {
+        const fileName = `${Date.now()}_${file.name}`;
+        const filePath = `${id}/${fileName}`;
+
+        const { error: uploadError } = await supabaseClient.storage
+            .from(BUCKET_NAME)
+            .upload(filePath, file, { upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        const { error: dbError } = await supabaseClient
+            .from('pendaftaran')
+            .update({ [field]: filePath })
+            .eq('id', id);
+
+        if (dbError) throw dbError;
+
+        alert("Berkas berhasil diupload!");
+        showDetail(id);
+
+    } catch (err) {
+        alert("Upload gagal: " + err.message);
+    }
+}
+    </script>
+    
+</body>
+</html>
