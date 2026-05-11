@@ -3,746 +3,555 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal Asesor</title>
+    <title>Admin Dashboard | LSK Global Jaya Lingkungan</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <style>
-        :root { --primary: #10b981; --primary-dark: #064e3b; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #fdfdfd; color: #1e293b; letter-spacing: -0.01em; }
-        .glass-nav { background: rgba(255, 255, 255, 0.8); backdrop-filter: saturate(180%) blur(15px); border-bottom: 1px solid rgba(226, 232, 240, 0.7); }
-        .login-gradient { background: radial-gradient(at 0% 0%, #064e3b 0%, #022c22 100%); }
-        .card-modern { background: white; border: 1px solid #f1f5f9; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
-        .card-modern:hover { border-color: #10b981; box-shadow: 0 20px 25px -5px rgba(16, 185, 129, 0.05); transform: translateY(-2px); }
-        .card-active { border-color: #10b981; background: #f0fdf4; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.1); }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        :root { --lsk-green: #065f46; --lsk-yellow: #facc15; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .bg-lsk-green { background-color: var(--lsk-green); }
+        .text-lsk-green { color: var(--lsk-green); }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-        .modal-blur { backdrop-filter: blur(10px); background: rgba(15, 23, 42, 0.6); }
-        @keyframes scaleUp { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .animate-modal { animation: scaleUp 0.3s ease-out forwards; }
+        .modal-overlay { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(4px); }
+        .animate-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .nav-item.active { background-color: var(--lsk-green); color: white; box-shadow: 0 10px 15px -3px rgba(6, 95, 70, 0.2); }
+        .status-badge { padding: 4px 12px; border-radius: 9999px; font-size: 10px; font-weight: 800; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
+        .loader { width: 48px; height: 48px; border: 5px solid var(--lsk-green); border-bottom-color: transparent; border-radius: 50%; display: inline-block; animation: rotation 1s linear infinite; }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="antialiased overflow-x-hidden">
+<body class="text-slate-800 antialiased">
 
-    <div id="app">
-        <!-- Header Navigasi -->
-        <nav id="top-nav" class="fixed top-0 w-full z-[40] glass-nav px-8 py-5 flex justify-between items-center hidden">
-            <div class="flex items-center gap-4">
-                <div class="w-11 h-11 bg-slate-900 rounded-2xl flex items-center justify-center shadow-lg shadow-slate-200">
-                    <i data-lucide="shield-check" class="text-emerald-400 w-6 h-6"></i>
+    <!-- LOGIN SECTION -->
+    <div id="login-section" class="fixed inset-0 z-[100] flex items-center justify-center bg-lsk-green p-4">
+        <div class="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-10 text-center animate-in">
+            <div class="w-24 h-24 bg-lsk-yellow rounded-3xl flex items-center justify-center mx-auto mb-8 rotate-3 shadow-xl border-4 border-white">
+                <img src="src/logo.png" alt="Logo" class="w-12 h-12 -rotate-3 object-contain">
+            </div>
+            <h1 class="text-3xl font-black text-slate-900 tracking-tighter uppercase mb-2">Admin Portal</h1>
+            <p class="text-slate-500 font-medium text-sm mb-10">LSK Global Jaya Lingkungan</p>
+            <form id="login-form" class="space-y-5 text-left">
+                <input type="email" id="login-email" required class="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none font-semibold" placeholder="Email Admin">
+                <input type="password" id="login-password" required class="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none font-semibold" placeholder="Kata Sandi">
+                <button type="submit" class="w-full bg-lsk-green text-white py-5 rounded-[1.5rem] font-black uppercase tracking-widest hover:bg-emerald-900 shadow-lg flex items-center justify-center gap-3">
+                    Masuk Sekarang <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                </button>
+                <p id="login-error" class="hidden text-red-500 text-xs font-bold text-center p-4 rounded-xl border border-red-100"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN APP WRAPPER -->
+    <div id="main-app" class="hidden min-h-screen flex flex-col lg:flex-row overflow-hidden">
+        <aside class="w-full lg:w-80 bg-slate-900 text-white flex flex-col shrink-0 z-50">
+            <div class="p-8 flex items-center gap-4 border-b border-slate-800/50">
+                <div class="w-12 h-12 bg-lsk-yellow rounded-2xl flex items-center justify-center shadow-lg">
+                    
+                    <img src="src/logo.png" 
+                        alt="Logo LSK GJL" 
+                        class="w-11 h-11 md:w-12 md:h-12 object-contain rounded-full" 
+                        style="filter: drop-shadow(2px 2px 4px rgba(34, 197, 94, 0.6)) drop-shadow(-2px -2px 4px rgba(234, 179, 8, 0.6));">
                 </div>
-                <div>
-                    <h1 class="font-extrabold text-xl tracking-tighter leading-none">LSK<span class="text-emerald-600"> Global Jaya Lingkungan</span></h1>
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Portal Resmi Asesor</p>
+                
+                <div class="leading-tight">
+                    <h2 class="text-sm font-black uppercase tracking-tight text-white">
+                        Global Jaya
+                    </h2>
+                    <p class="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">
+                        Lingkungan
+                    </p>
                 </div>
             </div>
-
-            <div class="flex items-center gap-6">
-                <div class="hidden md:flex items-center gap-3 pr-6 border-r border-slate-200">
-                    <div class="text-right">
-                        <p id="user-email-display" class="text-xs font-extrabold text-slate-900"></p>
-                        <p class="text-[9px] font-bold text-emerald-500 uppercase tracking-tighter">Verified Session</p>
-                    </div>
-                    <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-black text-slate-500 text-xs border border-white" id="user-avatar">?</div>
-                </div>
-                <button onclick="logout()" class="flex items-center gap-2 text-slate-400 hover:text-red-500 transition-colors font-bold text-xs uppercase tracking-widest">
-                    <i data-lucide="log-out" class="w-4 h-4"></i>
-                    <span class="hidden sm:inline">Logout</span>
+            <nav class="flex-1 p-6 space-y-2 overflow-y-auto custom-scrollbar">
+                <button onclick="changeTab('dashboard')" id="nav-dashboard" class="nav-item active w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-bold text-sm transition-all"><i data-lucide="layout-grid" class="w-5 h-5"></i> Dashboard</button>
+                <button onclick="changeTab('applicants')" id="nav-applicants" class="nav-item w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-bold text-sm text-slate-400 hover:text-white transition-all"><i data-lucide="users" class="w-5 h-5"></i> Data Pendaftar</button>
+                <button onclick="changeTab('reports')" id="nav-reports" class="nav-item w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-bold text-sm text-slate-400 hover:text-white transition-all"><i data-lucide="file-bar-chart" class="w-5 h-5"></i> Rekap & Laporan</button>
+            </nav>
+            <div class="p-6 bg-slate-950/50 border-t border-slate-800/50">
+                <button onclick="handleLogout()" class="w-full bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white py-4 rounded-2xl transition-all font-bold text-sm flex items-center justify-center gap-3">
+                    <i data-lucide="log-out" class="w-4 h-4"></i> Keluar
                 </button>
             </div>
-        </nav>
-
-        <!-- Konten Utama -->
-        <main id="main-content" class="pt-32 pb-20 px-8 max-w-[1400px] mx-auto hidden">
-            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 mb-12">
-                <div>
-                    <div class="flex items-center gap-2 mb-2">
-                        <span class="px-2 py-0.5 bg-emerald-100 text-emerald-600 text-[9px] font-black uppercase rounded">Live</span>
-                        <p class="text-slate-400 text-[11px] font-bold uppercase tracking-[0.2em]">Monitoring System</p>
-                    </div>
-                    <h2 class="text-4xl font-black text-slate-900 tracking-tight">Antrean Verifikasi</h2>
-                </div>
-
-                <!-- Search & Actions -->
-                <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-
-                    <div class="relative">
-    <button onclick="toggleDropdown()" 
-    class="px-6 py-4 bg-slate-900 text-white text-xs font-extrabold rounded-2xl hover:bg-emerald-600 transition-all flex items-center gap-2">
-        Rekap Data
-        <i data-lucide="chevron-down" class="w-4 h-4"></i>
-    </button>
-
-    <div id="dropdown-rekap" class="hidden absolute right-0 mt-3 w-64 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden z-50">
-
-        <button onclick="handleRekap('all')" class="w-full flex items-center gap-3 px-5 py-3 text-xs font-bold hover:bg-slate-50">
-            <i data-lucide="database" class="w-4 h-4 text-slate-400"></i>
-            Semua Data
-        </button>
-
-        <button onclick="handleRekap('verified')" class="w-full flex items-center gap-3 px-5 py-3 text-xs font-bold hover:bg-slate-50">
-            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500"></i>
-            Data Verified
-        </button>
-
-        <button onclick="handleRekap('pending')" class="w-full flex items-center gap-3 px-5 py-3 text-xs font-bold hover:bg-slate-50">
-            <i data-lucide="clock" class="w-4 h-4 text-amber-500"></i>
-            Data Pending
-        </button>
-
-        <button onclick="handleRekap('belum_bayar')" class="w-full flex items-center gap-3 px-5 py-3 text-xs font-bold hover:bg-slate-50">
-            <i data-lucide="credit-card" class="w-4 h-4 text-red-500"></i>
-            Belum Bayar
-        </button>
-
-    </div>
-</div>
-
-                    <div class="relative flex-1 lg:w-80">
-                        <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
-                        <input type="text" id="search-input" oninput="handleSearch()" placeholder="Cari Nama, Email, Skema..." class="w-full pl-12 pr-6 py-4 bg-white border border-slate-200 rounded-2xl text-xs font-bold outline-none focus:border-emerald-500 transition-all shadow-sm">
-                    </div>
-                    <button onclick="refreshData()" class="flex items-center justify-center gap-3 px-6 py-4 bg-white border border-slate-200 text-xs font-extrabold uppercase tracking-widest rounded-2xl hover:border-emerald-500 hover:text-emerald-600 transition-all shadow-sm group">
-                        <i data-lucide="refresh-cw" class="w-4 h-4 group-active:rotate-180 transition-all"></i> Refresh Data
-                    </button>
-                </div>
-            </div>
-
-            <!-- Statistik (Kini Interaktif) -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-                <div id="card-all" onclick="setQuickFilter('all')" class="card-modern card-active p-8 rounded-[2rem] flex items-center gap-6">
-                    <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center"><i data-lucide="users" class="w-8 h-8"></i></div>
-                    <div>
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Registrations</p>
-                        <h4 id="stat-total" class="text-3xl font-black text-slate-900 mt-1">0</h4>
-                    </div>
-                </div>
-                <div id="card-belum-bayar" onclick="setQuickFilter('belum_bayar')" class="card-modern p-8 rounded-[2rem] flex items-center gap-6">
-                    <div class="w-16 h-16 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center">
-                        <i data-lucide="x-circle" class="w-8 h-8"></i>
-                    </div>
-                    <div>
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Belum Bayar</p>
-                        <h4 id="stat-belum-bayar" class="text-3xl font-black text-slate-900 mt-1">0</h4>
-                    </div>
-                </div>
-                <div id="card-pending" onclick="setQuickFilter('pending')" class="card-modern p-8 rounded-[2rem] flex items-center gap-6">
-                    <div class="w-16 h-16 bg-amber-50 text-amber-600 rounded-3xl flex items-center justify-center"><i data-lucide="clock" class="w-8 h-8"></i></div>
-                    <div>
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pending</p>
-                        <h4 id="stat-pending" class="text-3xl font-black text-slate-900 mt-1">0</h4>
-                    </div>
-                </div>
-                <div id="card-verified" onclick="setQuickFilter('verified')" class="card-modern p-8 rounded-[2rem] flex items-center gap-6">
-                    <div class="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-3xl flex items-center justify-center"><i data-lucide="check-circle-2" class="w-8 h-8"></i></div>
-                    <div>
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Verified</p>
-                        <h4 id="stat-verified" class="text-3xl font-black text-slate-900 mt-1">0</h4>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Tabel Kandidat -->
-            <div class="bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl shadow-slate-200/40 overflow-hidden">
-                <div class="overflow-x-auto custom-scrollbar">
-                    <table class="w-full text-left">
-                        <thead>
-                            <tr class="bg-slate-50/50">
-                                <th class="pl-10 pr-6 py-6 text-[11px] font-black text-slate-400 uppercase tracking-widest">Kandidat Asesi</th>
-                                <th class="px-6 py-6 text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">Skema</th>
-                                <th class="px-6 py-6 text-[11px] font-black text-slate-400 uppercase tracking-widest">Domisili</th>
-                                <th class="px-6 py-6 text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">Pembayaran</th>
-                                <th class="px-6 py-6 text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
-                                <th class="pr-10 pl-6 py-6 text-[11px] font-black text-slate-400 uppercase tracking-widest text-right">Tindakan</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-list" class="divide-y divide-slate-50"></tbody>
-                    </table>
-                </div>
-            </div>
-        </main>
-
-        <!-- Sidebar Detail -->
-        <div id="side-overlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity duration-300" onclick="hideDetail()"></div>
-        <aside id="side-panel" class="fixed top-0 right-0 h-full w-full max-w-xl bg-white z-[60] shadow-2xl translate-x-full transition-transform duration-500 ease-out overflow-y-auto custom-scrollbar">
-            <div id="side-content"></div>
         </aside>
 
-        <!-- Login Portal -->
-        <section id="login-overlay" class="fixed inset-0 z-[100] login-gradient flex items-center justify-center p-6 hidden">
-            <div class="bg-white w-full max-w-md rounded-[3.5rem] p-12 md:p-16 shadow-2xl relative">
-                <div class="relative z-10">
-                    <div class="w-20 h-20 bg-slate-900 rounded-3xl flex items-center justify-center mb-10 shadow-2xl shadow-emerald-900/40 rotate-3">
-                        <i data-lucide="fingerprint" class="text-emerald-500 w-10 h-10"></i>
-                    </div>
-                    <h3 class="text-4xl font-black text-slate-900 mb-3 tracking-tight leading-none">Access<br><span class="text-emerald-600 italic">Control</span></h3>
-                    <p class="text-slate-400 text-sm mb-12 font-medium">Otorisasi khusus akun asesor LSK Amdal.</p>
-                    <div class="space-y-6">
-                        <div class="space-y-2">
-                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">E-Mail Address</label>
-                            <input type="email" id="auth-email" class="w-full px-7 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all font-bold text-sm">
-                        </div>
-                        <div class="space-y-2">
-                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Private Password</label>
-                            <input type="password" id="auth-pass" class="w-full px-7 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all font-bold text-sm">
-                        </div>
-                        <button onclick="login()" id="btn-login" class="w-full py-5 bg-slate-900 text-emerald-400 font-black rounded-2xl shadow-2xl mt-8 hover:bg-emerald-600 hover:text-white transition-all transform active:scale-95">OTORISASI AKSES</button>
-                        <div id="auth-error" class="hidden p-4 bg-red-50 text-red-600 text-[11px] font-bold rounded-2xl border border-red-100 text-center animate-pulse"></div>
-                    </div>
-                </div>
-            </div>
-        </section>
+        <main class="flex-1 flex flex-col bg-slate-50 overflow-hidden">
+            <header class="h-20 bg-white border-b border-slate-200 px-8 flex items-center justify-between shrink-0">
+                <h2 id="current-tab-title" class="text-xl font-black text-slate-900 uppercase tracking-tighter">Ringkasan Sistem</h2>
+                <button onclick="refreshData()" class="p-3 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"><i data-lucide="refresh-cw" class="w-5 h-5"></i></button>
+            </header>
 
-        <!-- Document Viewer Modal -->
-        <div id="doc-modal" class="fixed inset-0 z-[100] modal-blur hidden flex items-center justify-center p-4 md:p-10">
-            <div class="bg-white w-full max-w-6xl h-full max-h-[90vh] rounded-[3rem] shadow-2xl flex flex-col overflow-hidden animate-modal">
-                <div class="px-10 py-6 border-b border-slate-100 flex justify-between items-center bg-white/50">
-                    <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600">
-                            <i data-lucide="file-eye" class="w-5 h-5"></i>
-                        </div>
-                        <div>
-                            <h4 id="modal-doc-title" class="font-black text-slate-900 tracking-tight">Meninjau Berkas</h4>
-                            <p class="text-[9px] font-black text-emerald-500 uppercase tracking-widest">LSK AMDAL Verified Docs</p>
+            <div class="flex-1 overflow-y-auto p-8 custom-scrollbar relative">
+                <!-- DASHBOARD TAB -->
+                <section id="tab-dashboard" class="space-y-8 animate-in">
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6" id="dashboard-stats"></div>
+                    <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                        <div class="xl:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-200"><canvas id="chart-applicants" class="h-[300px]"></canvas></div>
+                        <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-200"><canvas id="chart-schemes" class="h-[300px]"></canvas></div>
+                    </div>
+                </section>
+
+                <!-- APPLICANTS TAB -->
+                <section id="tab-applicants" class="hidden space-y-6 animate-in">
+                    <div class="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-6 rounded-[2rem] shadow-sm">
+                        <input type="text" id="table-search" oninput="renderApplicantsTable()" placeholder="Cari nama atau skema..." class="w-full md:w-96 px-6 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-lsk-green font-semibold">
+                        <select id="filter-status" onchange="renderApplicantsTable()" class="px-6 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold text-xs uppercase">
+                            <option value="all">Semua Status</option>
+                            <option value="Terverifikasi">Terverifikasi</option>
+                            <option value="Belum Verifikasi">Belum Verifikasi</option>
+                        </select>
+                    </div>
+                    <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead class="bg-slate-50 border-b">
+                                    <tr>
+                                        <th class="px-8 py-6 text-[10px] font-black uppercase text-slate-400">Pendaftar</th>
+                                        <th class="px-8 py-6 text-[10px] font-black uppercase text-slate-400">Skema</th>
+                                        <th class="px-8 py-6 text-[10px] font-black uppercase text-slate-400">Batch</th>
+                                        <th class="px-8 py-6 text-[10px] font-black uppercase text-slate-400">Pembayaran</th>
+                                        <th class="px-8 py-6 text-[10px] font-black uppercase text-slate-400">Status Berkas</th>
+                                        <th class="px-8 py-6 text-[10px] font-black uppercase text-slate-400 text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="applicants-tbody" class="divide-y divide-slate-50"></tbody>
+                            </table>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <a id="btn-pop-external" href="#" target="_blank" class="p-3 bg-slate-50 text-slate-400 hover:bg-emerald-50 hover:text-emerald-600 rounded-2xl transition-all" title="Buka Tab Baru">
-                            <i data-lucide="external-link" class="w-5 h-5"></i>
-                        </a>
-                        <button onclick="closeDocModal()" class="p-3 bg-red-50 text-red-400 hover:bg-red-500 hover:text-white rounded-2xl transition-all">
-                            <i data-lucide="x" class="w-5 h-5"></i>
-                        </button>
+                </section>
+
+                <!-- REPORTS TAB -->
+                <section id="tab-reports" class="hidden space-y-8 animate-in">
+                    <div class="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-200">
+                        <h3 class="text-2xl font-black text-slate-900 mb-8 uppercase tracking-tighter">Ekspor Laporan PDF</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            <button onclick="generatePDF('all')" class="p-8 bg-slate-50 border-2 border-slate-100 rounded-[2rem] hover:border-lsk-green hover:bg-white transition-all text-left group">
+                                <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-sm group-hover:bg-lsk-green group-hover:text-white transition-all"><i data-lucide="file-text"></i></div>
+                                <h4 class="font-black text-slate-800 uppercase text-sm mb-2">Semua Pendaftar</h4>
+                                <p class="text-xs text-slate-400 leading-relaxed">Unduh rekap data lengkap seluruh peserta yang sudah mendaftar di sistem.</p>
+                            </button>
+                            <button onclick="generatePDF('verified')" class="p-8 bg-slate-50 border-2 border-slate-100 rounded-[2rem] hover:border-lsk-green hover:bg-white transition-all text-left group">
+                                <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-sm group-hover:bg-emerald-600 group-hover:text-white transition-all"><i data-lucide="check-circle"></i></div>
+                                <h4 class="font-black text-slate-800 uppercase text-sm mb-2">Hanya Terverifikasi</h4>
+                                <p class="text-xs text-slate-400 leading-relaxed">Rekap khusus peserta yang dokumennya sudah dinyatakan valid oleh admin.</p>
+                            </button>
+                            <button onclick="generatePDF('unpaid')" class="p-8 bg-slate-50 border-2 border-slate-100 rounded-[2rem] hover:border-lsk-green hover:bg-white transition-all text-left group">
+                                <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-sm group-hover:bg-red-600 group-hover:text-white transition-all"><i data-lucide="wallet"></i></div>
+                                <h4 class="font-black text-slate-800 uppercase text-sm mb-2">Belum Lunas</h4>
+                                <p class="text-xs text-slate-400 leading-relaxed">Daftar peserta yang masih memiliki tunggakan atau belum membayar.</p>
+                            </button>
+                        </div>
+                        <div id="batch-buttons" class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6"></div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL: REVIEW & MANAJEMEN BERKAS -->
+    <div id="modal-review" class="fixed inset-0 z-[110] hidden flex items-center justify-center p-4 lg:p-10">
+        <div class="fixed inset-0 modal-overlay" onclick="closeModal('modal-review')"></div>
+        <div class="bg-white w-full max-w-6xl h-full lg:h-auto lg:max-h-[90vh] rounded-[3rem] shadow-2xl relative z-20 flex flex-col overflow-hidden animate-in">
+            <div class="p-8 border-b flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-5">
+                    <div class="w-14 h-14 bg-lsk-yellow rounded-2xl flex items-center justify-center shadow-lg"><i data-lucide="folder-search" class="text-lsk-green"></i></div>
+                    <div>
+                        <h3 id="review-name" class="text-xl font-black text-slate-900 tracking-tight uppercase leading-none mb-1">Nama Peserta</h3>
+                        <p id="review-skema" class="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Skema Sertifikasi</p>
                     </div>
                 </div>
-                <div class="flex-1 bg-slate-100 relative">
-                    <div id="doc-loader" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 z-10">
-                        <div class="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-                        <p class="mt-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Generating Secure Token...</p>
-                    </div>
-                    <iframe id="doc-frame" src="" class="w-full h-full border-none opacity-0 transition-opacity duration-500"></iframe>
+                <button onclick="closeModal('modal-review')" class="p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-all"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-10 bg-slate-50/50 custom-scrollbar">
+                <div id="berkas-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8"></div>
+            </div>
+            <div class="p-8 border-t flex flex-col md:flex-row justify-between items-center bg-white gap-4">
+                <div class="flex gap-3 w-full md:w-auto">
+                    <button id="btn-unverify" class="flex-1 md:flex-none px-8 py-4 bg-red-50 text-red-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all">Tolak Verifikasi</button>
+                    <button id="btn-verify" class="flex-1 md:flex-none px-8 py-4 bg-lsk-green text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-900 transition-all shadow-lg">Verifikasi Sekarang</button>
                 </div>
+                <p class="text-[10px] text-slate-400 font-bold italic text-center md:text-right">Admin memiliki otoritas penuh untuk menghapus dan memperbaiki berkas peserta.</p>
             </div>
         </div>
     </div>
 
+    <!-- ADMIN ACTION INPUTS -->
+    <input type="file" id="admin-upload-input" class="hidden" accept=".jpg,.jpeg,.png,.pdf">
+
+    <!-- TOASTS -->
+    <div id="toast-container" class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] flex flex-col gap-2 pointer-events-none"></div>
+
     <script>
-        const SB_URL = 'https://lethwgfaqxrdhwcqctze.supabase.co';
-        const SB_KEY = 'sb_publishable_hbYoS1xiqoQwJ2F1e7lTgg_uO7hxx-y';
-        const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
-        const BUCKET_NAME = 'berkas_lsk';
+        const SUPABASE_URL = "https://lethwgfaqxrdhwcqctze.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_hbYoS1xiqoQwJ2F1e7lTgg_uO7hxx-y";
+        const BUCKET_NAME = "berkas_lsk";
+        const { createClient } = supabase;
+        const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        let pendaftaranData = [];
-        let filteredData = [];
-        let currentStatusFilter = 'all'; // Default filter state
+        let applicantData = [];
+        let currentApplicant = null;
+        let mainChart = null, schemeChart = null;
+        let activeUploadKey = null;
 
-        async function checkSession() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (session) {
-                document.getElementById('login-overlay').classList.add('hidden');
-                document.getElementById('main-content').classList.remove('hidden');
-                document.getElementById('top-nav').classList.remove('hidden');
-                document.getElementById('user-email-display').innerText = session.user.email;
-                document.getElementById('user-avatar').innerText = session.user.email.charAt(0).toUpperCase();
-                refreshData();
-            } else {
-                document.getElementById('login-overlay').classList.remove('hidden');
-            }
-            lucide.createIcons();
+        window.onload = () => { lucide.createIcons(); checkAuth(); };
+
+        async function checkAuth() {
+            const { data: { session } } = await _supabase.auth.getSession();
+            if (session) showApp(session.user);
         }
 
-        async function login() {
-            const email = document.getElementById('auth-email').value;
-            const pass = document.getElementById('auth-pass').value;
-            const btn = document.getElementById('btn-login');
-            btn.innerText = "VERIFYING...";
-            btn.disabled = true;
-
-            const { error } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
+        document.getElementById('login-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
             if (error) {
-                const errBox = document.getElementById('auth-error');
-                errBox.classList.remove('hidden');
-                errBox.innerText = "Akses Ditolak: " + error.message;
-                btn.innerText = "OTORISASI AKSES";
-                btn.disabled = false;
-            } else {
-                window.location.reload();
-            }
+                const err = document.getElementById('login-error');
+                err.textContent = "Login Gagal: " + error.message; err.classList.remove('hidden');
+            } else showApp(data.user);
+        };
+
+        function showApp(user) {
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('main-app').classList.remove('hidden');
+            refreshData();
         }
 
-        async function logout() {
-            await supabaseClient.auth.signOut();
-            window.location.reload();
-        }
+        async function handleLogout() { await _supabase.auth.signOut(); window.location.reload(); }
 
         async function refreshData() {
-            const { data } = await supabaseClient.from('pendaftaran').select('*').order('created_at', { ascending: false });
-            pendaftaranData = data || [];
-            updateStats();
-            handleSearch(); // Triggers render through search and current filters
+            const { data, error } = await _supabase.from('pendaftaran').select('*').order('created_at', { ascending: false });
+            if (!error) {
+                applicantData = data;
+                updateStats(); renderApplicantsTable(); initCharts(); renderBatchButtons();
+            }
+        }
+
+        function changeTab(tabId) {
+            document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('nav-' + tabId).classList.add('active');
+            const titles = { 'dashboard': 'Ringkasan Sistem', 'applicants': 'Kelola Peserta', 'reports': 'Rekap & Laporan' };
+            document.getElementById('current-tab-title').textContent = titles[tabId];
+            lucide.createIcons();
         }
 
         function updateStats() {
-            document.getElementById('stat-total').innerText = pendaftaranData.length;
-            document.getElementById('stat-verified').innerText = pendaftaranData.filter(x => x.status_verifikasi === 'Verified').length;
-            document.getElementById('stat-pending').innerText = pendaftaranData.filter(x => x.status_verifikasi !== 'Verified').length;
-            document.getElementById('stat-belum-bayar').innerText = pendaftaranData.filter(x => x.status_pembayaran !== 'Sudah Bayar').length;
-        }
-
-        // Fungsi Baru untuk Filter Berdasarkan Klik Statistik
-        function setQuickFilter(type) {
-            currentStatusFilter = type;
-            
-            // UI Feedback: Highlight card yang aktif
-            document.getElementById('card-all').classList.remove('card-active');
-            document.getElementById('card-pending').classList.remove('card-active');
-            document.getElementById('card-verified').classList.remove('card-active');
-            document.getElementById('card-belum-bayar').classList.remove('card-active');
-
-            if (type === 'all') document.getElementById('card-all').classList.add('card-active');
-            if (type === 'pending') document.getElementById('card-pending').classList.add('card-active');
-            if (type === 'verified') document.getElementById('card-verified').classList.add('card-active');
-            if (type === 'belum_bayar') document.getElementById('card-belum-bayar').classList.add('card-active');
-
-            handleSearch(); // Re-apply filter and render
-        }
-
-        function handleSearch() {
-            const query = document.getElementById('search-input').value.toLowerCase();
-            
-            filteredData = pendaftaranData.filter(item => {
-                // 1. Cek Pencarian Teks
-                const matchesSearch = (item.nama && item.nama.toLowerCase().includes(query)) ||
-                    (item.email && item.email.toLowerCase().includes(query)) ||
-                    (item.skema && item.skema.toLowerCase().includes(query)) ||
-                    (item.kota && item.kota.toLowerCase().includes(query));
-
-                // 2. Cek Filter Status dari Klik Statistik
-                let matchesStatus = true;
-                if (currentStatusFilter === 'verified') {
-                    matchesStatus = item.status_verifikasi === 'Verified';
-                } else if (currentStatusFilter === 'pending') {
-                    matchesStatus = item.status_verifikasi !== 'Verified';
-                }
-                if (currentStatusFilter === 'belum_bayar') {
-                    matchesStatus = item.status_pembayaran !== 'Sudah Bayar';
-}
-                return matchesSearch && matchesStatus;
-            });
-            
-            renderTable();
-        }
-
-        function renderTable() {
-            const tbody = document.getElementById('table-list');
-            if (filteredData.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="py-20 text-center text-slate-400 font-bold text-sm">Data tidak ditemukan...</td></tr>`;
-                return;
-            }
-            tbody.innerHTML = filteredData.map(item => {
-                const isVerified = item.status_verifikasi === 'Verified';
-                return `
-                <tr class="group hover:bg-slate-50 transition-all">
-                    <td class="pl-10 pr-6 py-8">
-                        <div class="flex items-center gap-4">
-                            <div class="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center font-black text-emerald-400 text-xs shadow-lg shadow-slate-100">${(item.nama || '?').charAt(0)}</div>
-                            <div>
-                                <p class="font-extrabold text-sm text-slate-900">${item.nama || 'Tanpa Nama'}</p>
-                                <p class="text-[10px] font-medium text-slate-400 mt-0.5">${item.email || '-'}</p>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="px-6 py-8 text-center">
-                        <span class="px-3 py-1.5 bg-slate-900 text-emerald-400 text-[9px] font-black rounded-lg uppercase tracking-wider">${item.skema || 'KTPA'}</span>
-                    </td>
-                    <td class="px-6 py-8">
-                        <div class="flex items-center gap-2">
-                            <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-300"></i>
-                            <span class="text-xs text-slate-500 font-bold">${item.kota || 'Indonesia'}</span>
-                        </div>
-                    </td>
-                    <td class="px-6 py-8 text-center">
-                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tight ${
-                            item.status_pembayaran === 'Sudah Bayar'
-                            ? 'bg-emerald-50 text-emerald-600'
-                            : 'bg-red-50 text-red-600'
-                        }">
-                            <span class="w-1 h-1 rounded-full ${
-                                item.status_pembayaran === 'Sudah Bayar'
-                                ? 'bg-emerald-600'
-                                : 'bg-red-600'
-                            }"></span>
-                            ${item.status_pembayaran || 'Belum Bayar'}
-                        </span>
-                    </td>
-                    <td class="px-6 py-8 text-center">
-                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tight ${isVerified ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}">
-                            <span class="w-1 h-1 rounded-full ${isVerified ? 'bg-emerald-600' : 'bg-amber-600'}"></span>
-                            ${item.status_verifikasi || 'Pending'}
-                        </span>
-                    </td>
-                    <td class="pr-10 pl-6 py-8 text-right">
-                        <button onclick="showDetail('${item.id}')" class="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all shadow-sm">Review</button>
-                    </td>
-                </tr>`;
-            }).join('');
+            const container = document.getElementById('dashboard-stats');
+            const stats = [
+                { label: 'Total Peserta', val: applicantData.length, color: 'blue', icon: 'users' },
+                { label: 'Terverifikasi', val: applicantData.filter(a => a.status_verifikasi === 'Terverifikasi').length, color: 'emerald', icon: 'check-circle' },
+                { label: 'Belum Lunas', val: applicantData.filter(a => a.status_pembayaran !== 'sudah bayar').length, color: 'red', icon: 'wallet' },
+                { label: 'Menunggu', val: applicantData.filter(a => a.status_verifikasi !== 'Terverifikasi').length, color: 'amber', icon: 'clock' }
+            ];
+            container.innerHTML = stats.map(s => `
+                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200 flex items-center gap-6 group hover:shadow-xl transition-all duration-300">
+                    <div class="w-16 h-16 bg-${s.color}-50 text-${s.color}-600 rounded-3xl flex items-center justify-center group-hover:scale-110 transition-transform"><i data-lucide="${s.icon}" class="w-8 h-8"></i></div>
+                    <div><p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">${s.label}</p><h3 class="text-3xl font-black text-slate-900">${s.val}</h3></div>
+                </div>
+            `).join('');
             lucide.createIcons();
         }
-        
-        async function updatePembayaran(id, statusBaru) {
-            try {
-                const { error } = await supabaseClient
-                    .from('pendaftaran')
-                    .update({ status_pembayaran: statusBaru })
-                    .eq('id', id);
 
-                if (error) throw error;
+        function renderApplicantsTable() {
+            const tbody = document.getElementById('applicants-tbody');
+            const search = document.getElementById('table-search').value.toLowerCase();
+            const filter = document.getElementById('filter-status').value;
 
-                alert("Status pembayaran berhasil diupdate!");
-                hideDetail();
-                refreshData();
-            } catch (err) {
-                alert("Gagal update: " + err.message);
-            }
+            const filtered = applicantData.filter(a => {
+                const mSearch = a.nama.toLowerCase().includes(search) || (a.skema && a.skema.toLowerCase().includes(search));
+                const mFilter = filter === 'all' || a.status_verifikasi === filter;
+                return mSearch && mFilter;
+            });
+
+            tbody.innerHTML = filtered.map(a => `
+                <tr class="hover:bg-slate-50 transition-all">
+                    <!-- Nama -->
+                    <td class="px-6 py-4">
+                        <p class="text-sm font-semibold text-slate-900 leading-tight">${a.nama}</p>
+                        <p class="text-[9px] font-medium text-slate-400">${a.email || '-'}</p>
+                    </td>
+
+                    <!-- Skema -->
+                    <td class="px-6 py-4">
+                        <span class="text-[9px] font-bold uppercase text-slate-700 bg-slate-100 px-2 py-1 rounded-md border">
+                            ${a.skema || '-'}
+                        </span>
+                    </td>
+
+                    <!-- Batch -->
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-[9px] font-bold text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full">
+                            ${a.batch_id ? `Batch ${a.batch_id.replace('Batch ', '')}` : '-'}
+                        </span>
+                    </td>
+
+                    <!-- Pembayaran -->
+                    <td class="px-6 py-4">
+                        <span onclick="togglePayment('${a.id}', '${a.status_pembayaran}')" 
+                            class="text-[9px] px-2 py-1 rounded-full font-bold uppercase cursor-pointer
+                            ${a.status_pembayaran === 'sudah bayar' 
+                                ? 'bg-emerald-100 text-emerald-700' 
+                                : 'bg-red-100 text-red-700'}">
+                            ${a.status_pembayaran === 'sudah bayar' ? 'Lunas' : 'Belum'}
+                        </span>
+                    </td>
+
+                    <!-- Status -->
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full 
+                                ${a.status_verifikasi === 'Terverifikasi' ? 'bg-emerald-500' : 'bg-amber-500'}">
+                            </span>
+                            <span class="text-[10px] font-semibold text-slate-700">
+                                ${a.status_verifikasi || 'Pending'}
+                            </span>
+                        </div>
+                    </td>
+
+                    <!-- Aksi -->
+                    <td class="px-6 py-4">
+                        <div class="flex items-center justify-center gap-2">
+                            <button onclick="openReview('${a.id}')" 
+                                class="p-2 bg-slate-100 hover:bg-lsk-green hover:text-white rounded-lg transition-all">
+                                <i data-lucide="folder-search" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="handleDelete('${a.id}')" 
+                                class="p-2 bg-slate-100 hover:bg-red-500 hover:text-white rounded-lg transition-all">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+            lucide.createIcons();
         }
 
-        async function showDetail(id) {
-            const item = pendaftaranData.find(x => x.id === id);
-            const panel = document.getElementById('side-panel');
-            const overlay = document.getElementById('side-overlay');
-            const content = document.getElementById('side-content');
+        async function togglePayment(id, current) {
+            const next = current === 'sudah bayar' ? 'belum bayar' : 'sudah bayar';
+            const { error } = await _supabase.from('pendaftaran').update({ status_pembayaran: next }).eq('id', id);
+            if (!error) { showToast(`Status Pembayaran Diperbarui: ${next.toUpperCase()}`); refreshData(); }
+        }
+
+        // --- MANAJEMEN BERKAS: LIHAT, UNDUH, HAPUS, UPLOAD ---
+        async function openReview(id) {
+            const applicant = applicantData.find(a => a.id === id);
+            currentApplicant = applicant;
+            document.getElementById('review-name').textContent = applicant.nama;
+            document.getElementById('review-skema').textContent = applicant.skema || '-';
+            document.getElementById('modal-review').classList.remove('hidden');
+            await renderReviewGrid();
+            document.getElementById('btn-verify').onclick = () => updateVerif(applicant.id, 'Terverifikasi');
+            document.getElementById('btn-unverify').onclick = () => updateVerif(applicant.id, 'Belum Verifikasi');
+        }
+
+        async function renderReviewGrid() {
+            const grid = document.getElementById('berkas-grid');
+            grid.innerHTML = `<div class="col-span-full py-20 text-center"><span class="loader"></span><p class="mt-4 text-[10px] font-black uppercase text-slate-400">Menghubungkan ke Storage...</p></div>`;
             
-            overlay.classList.remove('hidden');
-            setTimeout(() => overlay.classList.add('opacity-100'), 10);
-            panel.classList.remove('translate-x-full');
-
-            content.innerHTML = `<div class="p-20 text-center text-slate-400 text-xs font-bold animate-pulse">Generating Secure Access Tokens...</div>`;
-
-            const berkasDef = [
-                { label: 'Kartu Identitas (KTP)', key: 'url_ktp', icon: 'credit-card' },
-                { label: 'Ijazah Terakhir', key: 'url_ijazah', icon: 'graduation-cap' },
-                { label: 'Curriculum Vitae', key: 'url_cv', icon: 'file-text' },
-                { label: 'Sertifikat Kompetensi', key: 'url_sertifikat', icon: 'award' },
-                { label: 'Pas Foto Terbaru', key: 'url_foto', icon: 'image' }
+            const configs = [
+                { k: 'url_foto', l: 'Pas Foto 3x4' }, { k: 'url_ktp', l: 'KTP' }, { k: 'url_ijazah', l: 'Ijazah' },
+                { k: 'url_cv', l: 'CV' }, { k: 'url_sertifikat', l: 'Sertifikat' }, { k: 'url_khusus', l: 'Lainnya' }
             ];
 
-            let berkasHtml = '';
-            for (const b of berkasDef) {
-                let rawPath = item[b.key];
-                if (rawPath && rawPath.length > 5) {
-                    let cleanPath = '';
-                    try {
-                        if (rawPath.includes(BUCKET_NAME + '/')) {
-                            cleanPath = rawPath.split(BUCKET_NAME + '/')[1].split('?')[0];
-                        } else if (rawPath.startsWith('http')) {
-                            const parts = rawPath.split('/');
-                            const bucketIdx = parts.indexOf(BUCKET_NAME);
-                            if (bucketIdx !== -1) {
-                                cleanPath = parts.slice(bucketIdx + 1).join('/').split('?')[0];
-                            } else {
-                                cleanPath = parts.pop().split('?')[0];
-                            }
-                        } else {
-                            cleanPath = rawPath.split('?')[0];
-                        }
-                        cleanPath = decodeURIComponent(cleanPath);
-                        const { data, error } = await supabaseClient.storage.from(BUCKET_NAME).createSignedUrl(cleanPath, 3600);
-                        const url = data?.signedUrl || '#';
+            const res = await Promise.all(configs.map(async c => {
+                const path = currentApplicant[c.k];
+                if (!path || path === 'NULL' || path === '') return { ...c, ex: false };
+                const { data } = await _supabase.storage.from(BUCKET_NAME).createSignedUrl(path, 3600);
+                return { ...c, ex: true, url: data?.signedUrl, path };
+            }));
 
-                        if (!error && url !== '#') {
-                            berkasHtml += `
-                                <div class="group p-5 bg-slate-50 border border-slate-100 rounded-[1.5rem] flex justify-between items-center transition-all hover:bg-white hover:border-emerald-200">
-                                    <div class="flex items-center gap-4">
-                                        <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-slate-400 group-hover:text-emerald-500 shadow-sm transition-colors">
-                                            <i data-lucide="${b.icon}" class="w-5 h-5"></i>
-                                        </div>
-                                        <div>
-                                            <span class="text-xs font-black text-slate-900">${b.label}</span>
-                                            <p class="text-[9px] font-bold text-emerald-500 uppercase tracking-tighter">Secure Link Generated</p>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-center gap-2">
-
-                                    <!-- LIHAT -->
-                                    <button onclick="openDocModal('${url}', '${b.label}')" 
-                                        class="p-3 bg-white border border-slate-200 text-slate-900 rounded-xl hover:bg-emerald-600 hover:text-white transition-all">
-                                        <i data-lucide="eye" class="w-4 h-4"></i>
-                                    </button>
-
-                                    <!-- HAPUS -->
-                                    <button onclick="deleteFile('${cleanPath}', '${item.id}', '${b.key}')" 
-                                        class="p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all">
-                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                    </button>
-
-                                </div>
-
-                                <!-- UPLOAD -->
-                                <label class="cursor-pointer p-3 bg-blue-50 text-blue-500 rounded-xl hover:bg-blue-500 hover:text-white transition-all">
-                                    <i data-lucide="upload" class="w-4 h-4"></i>
-                                    <input type="file" 
-                                        onchange="uploadFile(event, '${item.id}', '${b.key}')"
-                                        class="hidden">
-                                </label>
-                                </div>`;
-                        }
-                    } catch (e) { console.error("Error generating URL for", b.key, e); }
-                }
-            }
-
-            const isVerified = item.status_verifikasi === 'Verified';
-
-            content.innerHTML = `
-                <div class="sticky top-0 bg-white/90 backdrop-blur-md z-10 px-10 py-8 border-b border-slate-50 flex justify-between items-center">
-                    <h4 class="font-black text-[10px] uppercase tracking-[0.3em] text-slate-400">Berkas Pendaftaran</h4>
-                    <button onclick="hideDetail()" class="p-2 text-slate-300 hover:text-red-500"><i data-lucide="x" class="w-6 h-6"></i></button>
-                </div>
-                <div class="p-10">
-                    <div class="bg-slate-900 p-10 rounded-[3rem] text-white mb-10 relative overflow-hidden">
-                        <div class="absolute top-0 right-0 w-40 h-40 bg-emerald-500/10 rounded-full -mr-20 -mt-20 blur-2xl"></div>
-                        <span class="px-3 py-1 bg-emerald-500/20 text-emerald-400 text-[9px] font-black uppercase tracking-widest rounded-lg border border-emerald-500/30">${item.skema || 'KTPA'}</span>
-                        <h5 class="text-3xl font-black tracking-tight mt-4 leading-none">${item.nama || 'Anonim'}</h5>
-                        <p class="text-sm text-slate-400 mt-4 font-medium flex items-center gap-2">
-                             <i data-lucide="mail" class="w-4 h-4 text-emerald-500"></i> ${item.email || '-'}
-                        </p>
+            grid.innerHTML = res.map(b => `
+                <div class="bg-white rounded-[2rem] border-2 border-slate-100 p-6 flex flex-col group hover:border-lsk-green transition-all duration-300">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">${b.l}</span>
+                        ${b.ex ? `
+                        <button onclick="deleteBerkas('${b.k}', '${b.path}')" class="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all" title="Hapus Berkas">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>` : ''}
                     </div>
-                    <div id="action-feedback" class="hidden mb-10 p-6 rounded-3xl text-xs font-bold"></div>
-                    <div class="space-y-4 mb-12">
-                         <div class="flex items-center gap-2 mb-6">
-                            <div class="w-1 h-4 bg-emerald-500 rounded-full"></div>
-                            <p class="text-[10px] font-black text-slate-900 uppercase tracking-widest">Lampiran Digital</p>
-                        </div>
-                        <div class="grid grid-cols-1 gap-4">
-                            ${berkasHtml || '<div class="text-center py-10 bg-slate-50 rounded-3xl italic text-slate-400 text-xs">Berkas tidak dapat dimuat atau pendaftar tidak mengunggah berkas.</div>'}
-                        </div>
+                    
+                    <div class="flex-1 aspect-video bg-slate-50 rounded-2xl border flex items-center justify-center overflow-hidden mb-6">
+                        ${b.ex ? (
+                            b.path.match(/\.(jpg|jpeg|png|webp)$/i) 
+                            ? `<img src="${b.url}" class="w-full h-full object-cover">` 
+                            : `<div class="text-center"><i data-lucide="file-text" class="w-10 h-10 text-slate-300 mx-auto mb-2"></i><p class="text-[8px] font-bold text-slate-400 px-4 break-all">${b.path.split('/').pop()}</p></div>`
+                        ) : '<p class="text-[10px] text-slate-300 italic font-black">Berkas Kosong</p>'}
                     </div>
-                    <div class="pt-10 border-t border-slate-100">
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Keputusan Verifikasi</p>
-                        ${isVerified ? `
-                            <button id="btn-toggle-verify" onclick="updateStatus('${item.id}', 'Pending')" class="relative w-full py-6 bg-amber-600 text-white text-[11px] font-black uppercase tracking-widest rounded-[1.5rem] hover:bg-slate-900 transition-all shadow-xl shadow-amber-200/50 group overflow-hidden">
-                                <span id="btn-text" class="relative z-10">Batalkan Verifikasi</span>
-                                <div id="btn-loader" class="hidden absolute inset-0 items-center justify-center bg-slate-900 rounded-[1.5rem]">
-                                    <i data-lucide="refresh-cw" class="w-5 h-5 animate-spin text-emerald-400"></i>
-                                </div>
-                                <div class="pt-6">
-                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">
-                                    Status Pembayaran
-                                </p>
 
-                                <div class="flex gap-3">
-                                    <button onclick="updatePembayaran('${item.id}', 'Sudah Bayar')" 
-                                        class="flex-1 py-4 bg-emerald-600 text-white text-[10px] font-black rounded-2xl hover:bg-emerald-700 transition-all">
-                                        Tandai Sudah Bayar
-                                    </button>
-
-                                    <button onclick="updatePembayaran('${item.id}', 'Belum Bayar')" 
-                                        class="flex-1 py-4 bg-red-500 text-white text-[10px] font-black rounded-2xl hover:bg-red-600 transition-all">
-                                        Tandai Belum Bayar
-                                    </button>
-                                </div>
-                            </div>
-                            </button>
+                    <div class="flex gap-2">
+                        ${b.ex ? `
+                            <a href="${b.url}" target="_blank" class="flex-1 py-3 bg-slate-100 text-slate-600 text-[10px] font-black text-center rounded-xl hover:bg-slate-200 transition-all">LIHAT</a>
+                            <button onclick="downloadResource('${b.url}', '${b.path}')" class="flex-1 py-3 bg-emerald-50 text-emerald-700 text-[10px] font-black rounded-xl hover:bg-emerald-100 transition-all">UNDUH</button>
                         ` : `
-                            <button id="btn-toggle-verify" onclick="updateStatus('${item.id}', 'Verified')" class="relative w-full py-6 bg-emerald-600 text-white text-[11px] font-black uppercase tracking-widest rounded-[1.5rem] hover:bg-slate-900 transition-all shadow-xl shadow-emerald-200/50 group overflow-hidden">
-                                <span id="btn-text" class="relative z-10">Selesaikan Verifikasi</span>
-                                <div id="btn-loader" class="hidden absolute inset-0 items-center justify-center bg-slate-900 rounded-[1.5rem]">
-                                    <i data-lucide="refresh-cw" class="w-5 h-5 animate-spin text-emerald-400"></i>
-                                </div>
+                            <button onclick="triggerAdminUpload('${b.k}')" class="w-full py-3 bg-lsk-green text-white text-[10px] font-black rounded-xl hover:bg-emerald-900 transition-all flex items-center justify-center gap-2">
+                                <i data-lucide="upload" class="w-3.5 h-3.5"></i> UPLOAD ULANG
                             </button>
                         `}
                     </div>
-                </div>`;
+                </div>
+            `).join('');
             lucide.createIcons();
         }
 
-        function openDocModal(url, title) {
-            const modal = document.getElementById('doc-modal');
-            const frame = document.getElementById('doc-frame');
-            const loader = document.getElementById('doc-loader');
-            const titleEl = document.getElementById('modal-doc-title');
-            const externalLink = document.getElementById('btn-pop-external');
-            titleEl.innerText = title;
-            externalLink.href = url;
-            modal.classList.remove('hidden');
-            loader.classList.remove('hidden');
-            frame.classList.add('opacity-0');
-            frame.src = url;
-            frame.onload = () => {
-                loader.classList.add('hidden');
-                frame.classList.remove('opacity-0');
-            };
-            lucide.createIcons();
+        function triggerAdminUpload(key) { activeUploadKey = key; document.getElementById('admin-upload-input').click(); }
+
+        document.getElementById('admin-upload-input').onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file || !activeUploadKey) return;
+            showToast("Proses Upload Sedang Berjalan...");
+            const fileName = `${Date.now()}_ADMIN_UPLOAD_${file.name.replace(/\s/g, '_')}`;
+            const { data, error } = await _supabase.storage.from(BUCKET_NAME).upload(fileName, file);
+            if (!error) {
+                await _supabase.from('pendaftaran').update({ [activeUploadKey]: data.path }).eq('id', currentApplicant.id);
+                showToast("Berkas Berhasil Diperbarui oleh Admin", "success");
+                currentApplicant[activeUploadKey] = data.path;
+                renderReviewGrid();
+            } else showToast("Gagal Upload: " + error.message, "error");
+        };
+
+        async function deleteBerkas(key, path) {
+            if (!confirm("Hapus berkas ini secara permanen?")) return;
+            showToast("Menghapus berkas...");
+            await _supabase.storage.from(BUCKET_NAME).remove([path]);
+            await _supabase.from('pendaftaran').update({ [key]: null }).eq('id', currentApplicant.id);
+            currentApplicant[key] = null;
+            renderReviewGrid();
+            showToast("Berkas Telah Terhapus", "success");
         }
 
-        function closeDocModal() {
-            const modal = document.getElementById('doc-modal');
-            const frame = document.getElementById('doc-frame');
-            modal.classList.add('hidden');
-            frame.src = '';
-        }
-
-        async function updateStatus(id, newStatus) {
-            const btn = document.getElementById('btn-toggle-verify');
-            const btnText = document.getElementById('btn-text');
-            const loader = document.getElementById('btn-loader');
-            const feedback = document.getElementById('action-feedback');
-            
-            btn.disabled = true;
-            btnText.classList.add('opacity-0');
-            loader.classList.remove('hidden');
-            loader.classList.add('flex');
-
+        async function downloadResource(url, path) {
             try {
-                const { error } = await supabaseClient.from('pendaftaran').update({ status_verifikasi: newStatus }).eq('id', id);
-                if (error) throw error;
-                
-                feedback.className = `mb-10 p-6 rounded-[2rem] text-xs font-bold flex items-center gap-3 ${newStatus === 'Verified' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`;
-                feedback.innerHTML = `<i data-lucide="check-circle" class="w-5 h-5"></i> Status berhasil diperbarui menjadi: ${newStatus}`;
-                feedback.classList.remove('hidden');
-                lucide.createIcons();
-                
-                setTimeout(() => { hideDetail(); refreshData(); }, 1200);
-            } catch (err) {
-                feedback.className = "mb-10 p-6 rounded-[2rem] text-xs font-bold bg-red-50 text-red-600 border border-red-100";
-                feedback.innerHTML = `Gagal memperbarui status: ${err.message}`;
-                feedback.classList.remove('hidden');
-                btn.disabled = false;
-                btnText.classList.remove('opacity-0');
-                loader.classList.add('hidden');
-            }
+                const res = await fetch(url);
+                const blob = await res.blob();
+                const bUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = bUrl; a.download = path.split('/').pop();
+                document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(bUrl);
+                showToast("Unduhan Selesai");
+            } catch (err) { showToast("Gagal mengunduh", "error"); }
         }
 
-        function hideDetail() {
-            document.getElementById('side-overlay').classList.remove('opacity-100');
-            document.getElementById('side-panel').classList.add('translate-x-full');
-            setTimeout(() => document.getElementById('side-overlay').classList.add('hidden'), 300);
+        async function updateVerif(id, status) {
+            const { error } = await _supabase.from('pendaftaran').update({ status_verifikasi: status }).eq('id', id);
+            if (!error) { showToast(`Status Verifikasi: ${status}`); closeModal('modal-review'); refreshData(); }
         }
 
-        window.onload = checkSession;
-
-        function toggleDropdown() {
-            const dd = document.getElementById('dropdown-rekap');
-            dd.classList.toggle('hidden');
-            lucide.createIcons();
+        async function handleDelete(id) {
+            if (!confirm("Hapus data pendaftar ini secara permanen?")) return;
+            await _supabase.from('pendaftaran').delete().eq('id', id);
+            showToast("Data Pendaftar Berhasil Dihapus"); refreshData();
         }
 
-        function handleRekap(type) {
-            document.getElementById('dropdown-rekap').classList.add('hidden');
-            generatePDF(type);
-        }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
-        async function generatePDF(type) {
+        // --- PDF GENERATION ---
+        function generatePDF(type, batch = null) {  
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
 
-            let dataFilter = [];
+            let data = applicantData;
+            let title = "LAPORAN PENDAFTAR LSK GLOBAL JAYA LINGKUNGAN";
 
-            if (type === 'all') {
-                dataFilter = pendaftaranData;
-            } else if (type === 'pending') {
-                dataFilter = pendaftaranData.filter(x => x.status_verifikasi !== 'Verified');
-            } else if (type === 'verified') {
-                dataFilter = pendaftaranData.filter(x => x.status_verifikasi === 'Verified');
-            } else if (type === 'belum_bayar') {
-                dataFilter = pendaftaranData.filter(x => x.status_pembayaran !== 'Sudah Bayar');
-}
+            // FILTER
+            if (type === 'verified') {
+                data = data.filter(a => a.status_verifikasi === 'Terverifikasi');
+                title += "\n(STATUS: TERVERIFIKASI)";
+            }
 
-            // Judul
-            doc.setFontSize(16);
-            doc.text(`Rekap Data ${type.toUpperCase()}`, 14, 15);
+            if (type === 'unpaid') {
+                data = data.filter(a => a.status_pembayaran !== 'sudah bayar');
+                title += "\n(STATUS: BELUM LUNAS)";
+            }
 
-            // Mapping data ke tabel
-            const tableData = dataFilter.map((item, index) => [
-                index + 1,
-                item.nama || '-',
-                item.email || '-',
-                item.skema || '-',
-                item.kota || '-',
-                item.status_verifikasi || 'Pending'
+            // 🔥 FILTER BATCH
+            if (type === 'batch' && batch) {
+                data = data.filter(a => {
+                    if (!a.batch_id) return false;
+                    return a.batch_id.replace('Batch ', '') == batch;
+                });
+                title += `\n(BATCH ${batch})`;
+            }
+
+            // HEADER
+            doc.setFontSize(14);
+            doc.setTextColor(6, 95, 70);
+            doc.text(title, 14, 20);
+
+            doc.setFontSize(8);
+            doc.setTextColor(100, 116, 139);
+            doc.text(`Dicetak: ${new Date().toLocaleString('id-ID')}`, 14, 30);
+
+            // TABLE
+            const tableData = data.map((a, i) => [
+                i + 1,
+                a.nama,
+                a.skema || '-',
+                a.batch_id || '-',
+                a.status_pembayaran === 'sudah bayar' ? 'LUNAS' : 'BELUM',
+                a.status_verifikasi || 'Pending'
             ]);
 
-            // Table
             doc.autoTable({
-                startY: 25,
-                head: [['No', 'Nama', 'Email', 'Skema', 'Domisili', 'Status']],
+                head: [['No', 'Nama', 'Skema', 'Batch', 'Pembayaran', 'Verifikasi']],
                 body: tableData,
-                styles: {
-                    fontSize: 8
-                },
-                headStyles: {
-                    fillColor: [16, 185, 129] // emerald
-                }
+                startY: 35,
+                headStyles: { fillColor: [6, 95, 70] },
+                styles: { fontSize: 8 }
             });
 
-            // Save
-            doc.save(`Rekap_${type}.pdf`);
+            doc.save(`Laporan_${type}_${batch || 'all'}.pdf`);
+            showToast("PDF Berhasil Dibuat");
         }
 
-window.addEventListener('click', function(e) {
-    const dropdown = document.getElementById('dropdown-rekap');
-    const button = e.target.closest('button');
+        // --- CHARTS ---
+        function initCharts() {
+            if (mainChart) mainChart.destroy(); if (schemeChart) schemeChart.destroy();
+            const days = [...Array(7)].map((_, i) => { const d = new Date(); d.setDate(d.getDate() - i); return d.toISOString().split('T')[0]; }).reverse();
+            const trend = days.map(d => applicantData.filter(a => a.created_at && a.created_at.startsWith(d)).length);
+            mainChart = new Chart(document.getElementById('chart-applicants'), {
+                type: 'line', data: { labels: days.map(d => d.split('-').reverse().slice(0,2).join('/')), datasets: [{ label: 'Pendaftar Baru', data: trend, borderColor: '#065f46', backgroundColor: 'rgba(6,95,70,0.1)', fill: true, tension: 0.4 }] },
+                options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+            const sCounts = {}; applicantData.forEach(a => { if(a.skema) sCounts[a.skema] = (sCounts[a.skema] || 0) + 1; });
+            schemeChart = new Chart(document.getElementById('chart-schemes'), {
+                type: 'doughnut', data: { labels: Object.keys(sCounts), datasets: [{ data: Object.values(sCounts), backgroundColor: ['#065f46', '#facc15', '#0ea5e9', '#f43f5e'] }] },
+                options: { maintainAspectRatio: false }
+            });
+        }
 
-    if (!e.target.closest('#dropdown-rekap') && !button) {
-        dropdown.classList.add('hidden');
-    }
-});
+        function showToast(msg, type = 'success') {
+            const c = document.getElementById('toast-container');
+            const t = document.createElement('div');
+            t.className = `px-8 py-4 rounded-2xl shadow-xl text-white font-black text-[10px] uppercase tracking-widest animate-in flex items-center gap-3 ${type === 'success' ? 'bg-slate-900' : 'bg-red-600'}`;
+            t.innerHTML = `<i data-lucide="${type === 'success' ? 'check' : 'alert-circle'}" class="w-4 h-4"></i> ${msg}`;
+            c.appendChild(t); lucide.createIcons();
+            setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
+        }
 
+        function renderBatchButtons() {
+    const container = document.getElementById('batch-buttons');
 
-async function deleteFile(path, id, field) {
-    if (!confirm("Yakin hapus berkas ini?")) return;
+    const batches = [...new Set(
+        applicantData
+            .map(a => a.batch_id)
+            .filter(b => b)
+            .map(b => b.replace('Batch ', ''))
+    )];
 
-    try {
-        const { error: errDel } = await supabaseClient.storage
-            .from(BUCKET_NAME)
-            .remove([path]);
-
-        if (errDel) throw errDel;
-
-        const { error: errDb } = await supabaseClient
-            .from('pendaftaran')
-            .update({ [field]: null })
-            .eq('id', id);
-
-        if (errDb) throw errDb;
-
-        alert("Berkas berhasil dihapus!");
-        showDetail(id);
-    } catch (err) {
-        alert("Gagal hapus: " + err.message);
-    }
-}
-
-async function uploadFile(event, id, field) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    try {
-        const fileName = `${Date.now()}_${file.name}`;
-        const filePath = `${id}/${fileName}`;
-
-        const { error: uploadError } = await supabaseClient.storage
-            .from(BUCKET_NAME)
-            .upload(filePath, file, { upsert: true });
-
-        if (uploadError) throw uploadError;
-
-        const { error: dbError } = await supabaseClient
-            .from('pendaftaran')
-            .update({ [field]: filePath })
-            .eq('id', id);
-
-        if (dbError) throw dbError;
-
-        alert("Berkas berhasil diupload!");
-        showDetail(id);
-
-    } catch (err) {
-        alert("Upload gagal: " + err.message);
-    }
+    container.innerHTML = batches.map(b => `
+        <button onclick="generatePDF('batch', '${b}')"
+            class="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl 
+            hover:bg-emerald-600 hover:text-white transition-all font-bold text-xs uppercase">
+            Download Batch ${b}
+        </button>
+    `).join('');
 }
     </script>
     
