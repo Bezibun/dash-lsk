@@ -113,6 +113,7 @@
                                 <thead class="bg-slate-50 border-b">
                                     <tr>
                                         <th class="px-8 py-6 text-[10px] font-black uppercase text-slate-400">Pendaftar</th>
+                                        <th class="px-8 py-6 text-[10px] font-black uppercase text-slate-400">Asal Instansi</th>
                                         <th class="px-8 py-6 text-[10px] font-black uppercase text-slate-400">Skema</th>
                                         <th class="px-8 py-6 text-[10px] font-black uppercase text-slate-400">Batch</th>
                                         <th class="px-8 py-6 text-[10px] font-black uppercase text-slate-400">Pembayaran</th>
@@ -277,6 +278,11 @@
                     <td class="px-6 py-4">
                         <p class="text-sm font-semibold text-slate-900 leading-tight">${a.nama}</p>
                         <p class="text-[9px] font-medium text-slate-400">${a.email || '-'}</p>
+                    </td>
+                    
+                    <!-- Instansi -->
+                    <td class="px-6 py-4">
+                        <p class="text-sm font-semibold text-slate-900 leading-tight">${a.instansi}</p>
                     </td>
 
                     <!-- Skema -->
